@@ -1,16 +1,26 @@
 import api from './api';
 
-// Fungsi untuk mengambil semua data produk
-export const getAllProducts = async () => {
-  try {
-    // Panggilan akan otomatis menjadi GET http://localhost:5173/api/productsApi
-    const response = await api.get('/productsApi'); 
-    return response.data;
-  } catch (error) {
-    // Anda bisa menambahkan logic error handling yang lebih baik di sini
-    console.log(`Error: ${error}`)
-    throw error;
-  }
+export const getProducts = async () => {
+  const response = await api.get('/ProductsApi'); 
+  // Debugging biar Ali liat isi datanya
+  console.log("Products: " + JSON.stringify(response.data)); 
+  return response.data;
 };
 
-// ... fungsi lain seperti getProductById, createProduct, dsb.
+export const createProduct = async (payload) => {
+  /* Payload butuh: 
+     { 
+       productName: "...", 
+       categoryId: 123,  <-- INI PENTING (Harus Integer)
+       price: 15000, 
+       stock: 10, 
+       active: true 
+     } 
+  */
+  const response = await api.post('/ProductsApi', payload);
+  return response.data;
+};
+
+export const deleteProduct = async (id) => {
+  await api.delete(`/ProductsApi/${id}`);
+};

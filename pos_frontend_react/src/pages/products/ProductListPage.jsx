@@ -1,78 +1,134 @@
-import React, { useState, useEffect } from 'react';
-import { getAllProducts } from '../../services/productService'; 
-// Asumsikan Ali akan menempatkan file ini di src/pages/products
+import { useEffect, useState } from 'react';
+import { getProducts, deleteProduct } from '../../services/productService';
+import { Link } from 'react-router-dom';
+import Sidebar from "../../components/Sidebar";
+import Swal from 'sweetalert2';
 
 const ProductListPage = () => {
-    // State untuk menyimpan daftar produk
-    const [products, setProducts] = useState([]); 
-    // State untuk menangani status loading
-    const [isLoading, setIsLoading] = useState(true);
-    // State untuk menangani error
-    const [error, setError] = useState(null);
+    const [products, setProducts] = useState([]);
 
     useEffect(() => {
-        // Fungsi async untuk mengambil data
-        const fetchProducts = async () => {
-            try {
-                // 1. Reset error dan set loading ke true
-                setError(null);
-                setIsLoading(true); 
+        loadData();
+    }, []);
 
-                // 2. Panggil service layer
-                const data = await getAllProducts(); 
-                
-                // 3. Simpan data ke state
-                setProducts(data);
-            } catch (err) {
-                // 4. Tangani error
-                setError('Gagal memuat data produk dari API. Cek koneksi backend.');
-                setProducts([]); // Kosongkan produk jika ada error
-            } finally {
-                // 5. Matikan status loading
-                setIsLoading(false);
+    const loadData = async () => {
+        try {
+            const result = await getProducts();
+            setProducts(result.data || result);
+        } catch (err) {
+            alert("Gagal ambil produk: " + err);
+        }
+    };
+
+    const handleDelete = (id) => {
+        // 1. Tampilkan Konfirmasi Dulu
+        Swal.fire({
+            title: 'Yakin hapus produk ini?',
+            text: "Data yang dihapus tidak bisa dikembalikan!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33', // Warna merah untuk tombol hapus
+            cancelButtonColor: '#3085d6', // Warna biru untuk batal
+            confirmButtonText: 'Ya, Hapus!',
+            cancelButtonText: 'Batal'
+        }).then(async (result) => {
+            // 2. Jika user klik "Ya"
+            if (result.isConfirmed) {
+                try {
+                    await deleteProduct(id);
+                    
+                    // 3. Tampilkan Sukses & Refresh Data
+                    Swal.fire({
+                        title: 'Terhapus!',
+                        text: 'Produk berhasil dihapus.',
+                        icon: 'success',
+                        timer: 1500, // Otomatis tutup setelah 1.5 detik
+                        showConfirmButton: false
+                    });
+                    
+                    loadData(); // Refresh tabel
+                } catch (error) {
+                    // Handle Error
+                    Swal.fire({
+                        title: 'Gagal!',
+                        text: 'Gagal menghapus produk (Mungkin sedang digunakan di transaksi).',
+                        icon: 'error'
+                    });
+                }
             }
-        };
+        });
+    };
 
-        fetchProducts();
-    }, []); // Array kosong berarti fungsi hanya dijalankan sekali setelah komponen dimuat (componentDidMount)
+    // Helper function untuk format Rupiah (Bonus UX)
+    const formatRupiah = (number) => {
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(number);
+    };
 
-    // --- Rendernya ---
-
-    // 1. Tampilkan Loading
-    if (isLoading) {
-        return (
-            <div className="p-8">
-                <h1 className="text-2xl font-bold">Daftar Produk</h1>
-                <p className="mt-4">Memuat data produk... (Loading Spinner)</p>
-            </div>
-        );
-    }
-
-    // 2. Tampilkan Error
-    if (error) {
-        return (
-            <div className="p-8">
-                <h1 className="text-2xl font-bold">Daftar Produk</h1>
-                <p className="mt-4 text-red-600 border border-red-300 p-4 bg-red-50">{error}</p>
-            </div>
-        );
-    }
-
-    // 3. Tampilkan Data (Penting untuk Ali, agar bisa melihat hasilnya)
     return (
-        <div className="p-8">
-            <h1 className="text-2xl font-bold">Daftar Produk ({products.length} item)</h1>
-            <p className="text-gray-500 mb-6">Pastikan API .NET berjalan di port yang benar.</p>
-            
-            <div className="bg-white p-6 shadow-md rounded-lg">
-                <h2 className="text-lg font-semibold mb-4">Hasil Fetch Data (Format Mentah)</h2>
-                {/* Tampilkan data mentah untuk debugging dan konfirmasi */}
-                <pre className="whitespace-pre-wrap break-words bg-gray-100 p-3 rounded text-sm max-h-96 overflow-auto">
-                    {JSON.stringify(products, null, 2)}
-                </pre>
+        <div className="flex min-h-screen bg-gray-100">
+            {/* Bagian Kiri: SIdebar */}
+            <Sidebar />
+
+
+            {/* Bagian: Konten Utama */}
+            <div className="flex-1 p-8">
+                <header className="bg-white shadow p-4 rounded mb-6 flex justify-between items-center">
+                    <h2 className="text-xl font-semibold text-gray-800">Overview</h2>
+                    <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-600">Halo, Admin</span>
+                        <div className="w-8 h-8 bg-blue-500 rounded-full"></div>
+                    </div>
+                </header>
+
+                <div className="p-6">
+                    <h1 className="text-2xl font-bold mb-4">Daftar Produk</h1>
+                    <Link to="/products/new" className="bg-blue-600 text-white px-4 py-2 rounded mb-4 inline-block">+ Tambah Produk</Link>
+
+                    <div className="bg-white shadow rounded overflow-hidden">
+                        <table className="w-full text-left">
+                            <thead className="bg-gray-100 border-b">
+                                <tr>
+                                    <th className="p-3">Nama Produk</th>
+                                    {/* Kalau backend kirim CategoryName, tampilkan. Kalau cuma ID, tampilkan ID dulu gapapa */}
+                                    <th className="p-3">Kategori</th>
+                                    <th className="p-3">Harga</th>
+                                    <th className="p-3">Stok</th>
+                                    <th className="p-3">Tag</th>
+                                    <th className="p-3">Aksi</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {products.map((prod) => (
+                                    <tr key={prod.id} className="border-b hover:bg-gray-50">
+                                        <td className="p-3 font-bold">{prod.productName}</td>
+                                        {/* Asumsi backend mengirim object category atau categoryName */}
+                                        <td className="p-3">
+                                            {prod.category ? prod.category.categoryName : prod.categoryId}
+                                        </td>
+                                        <td className="p-3">{formatRupiah(prod.price)}</td>
+                                        <td className="p-3">{prod.stock} pcs</td>
+                                        <td className="p-3">
+                                            <div className="flex flex-wrap gap-1">
+                                                {/* Cek apakah ada tags, lalu looping */}
+                                                {prod.tags && prod.tags.map((tag) => (
+                                                    <span key={tag.id} className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-0.5 rounded">
+                                                        {tag.tagName}
+                                                    </span>
+                                                ))}
+                                                {(!prod.tags || prod.tags.length === 0) && <span className="text-gray-400 text-xs">-</span>}
+                                            </div>
+                                        </td>
+                                        <td className="p-3">
+                                            <button onClick={() => handleDelete(prod.id)} className="text-red-500 hover:text-red-700">Hapus</button>
+                                        </td>
+                                    </tr>
+                                ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     );
 };
-
 export default ProductListPage;

@@ -3,6 +3,9 @@ import LoginPage from './pages/auth/LoginPage'; // Import ini
 import DashboardPage from './pages/dashboard/DashboardPage';
 import ProtectedRoute from './components/ProtectedRoute';
 import ProductListPage from './pages/products/ProductListPage';
+import CategoryFormPage from './pages/categories/CategoryFormPage';
+import CategoryListPage from './pages/categories/CategoryListPage';
+import ProductFormPage from './pages/products/ProductFormPage';
 
 function App() {
   return (
@@ -11,11 +14,14 @@ function App() {
 
         <Route path="/login" element={<LoginPage />} />
         <Route element={<ProtectedRoute />}>
-       {/* Semua route disini akan di cek tokennya oleh ProtectedRoute */}
+
           <Route path="/" element={<DashboardPage />} /> 
           <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/products" element={<ProductListPage />} /> 
-          {/* ... rute lain seperti /customers, /products, /transaksi */}
+          <Route path="/products/new" element={<ProductFormPage/>}/>
+          <Route path="/categories" element={<CategoryListPage />} />
+          <Route path="/categories/new" element={<CategoryFormPage />} />
+           
         </Route>
 
         {/* Opsional: Rute 404 */}
