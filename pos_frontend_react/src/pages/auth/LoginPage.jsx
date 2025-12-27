@@ -31,8 +31,9 @@ const LoginPage = () => {
       const token = response.data.data.token; 
 
       if (token) {
-        // 3. Simpan Token di Brankas Browser (LocalStorage)
+        // 3. Simpan Token dan Username di Brankas Browser (LocalStorage)
         localStorage.setItem('token', token);
+        localStorage.setItem('username', username);
         
         // 4. Redirect ke Dashboard
         alert("Login Berhasil! Otw Dashboard...");

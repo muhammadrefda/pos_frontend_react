@@ -1,8 +1,15 @@
 import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import Swal from 'sweetalert2';
-import { FaBox } from "react-icons/fa";
-import { FaChartArea } from "react-icons/fa";
+import { 
+    FaBox, 
+    FaChartLine, 
+    FaTachometerAlt, 
+    FaList, 
+    FaTags, 
+    FaUsers, 
+    FaSignOutAlt 
+} from "react-icons/fa";
 
 
 const Sidebar = () => {
@@ -46,7 +53,7 @@ const Sidebar = () => {
       {/* Menu List */}
       <nav className="flex-1 px-2 py-4 space-y-2">
         <Link to="/dashboard" className="flex items-center px-4 py-3 hover:bg-gray-700 rounded transition-colors">
-            <FaBox className="mr-3" /> Dashboard
+            <FaTachometerAlt className="mr-3" /> Dashboard
         </Link>
         
         <Link to="/products" className="flex items-center px-4 py-3 hover:bg-gray-700 rounded transition-colors">
@@ -54,14 +61,18 @@ const Sidebar = () => {
         </Link>
 
         <Link to="/categories" className="flex items-center px-4 py-3 hover:bg-gray-700 rounded transition-colors">
-            <FaBox className="mr-3" /> Kategori
+            <FaList className="mr-3" /> Kategori
+        </Link>
+
+        <Link to="/tags" className="flex items-center px-4 py-3 hover:bg-gray-700 rounded transition-colors">
+            <FaTags className="mr-3" /> Tag
         </Link>
 
         <Link to="/customers" className="flex items-center px-4 py-3 hover:bg-gray-700 rounded transition-colors">
-            <FaBox className="mr-3" /> Pelanggan
+            <FaUsers className="mr-3" /> Pelanggan
         </Link>
         <div className="px-4 py-3 text-gray-500 cursor-not-allowed flex items-center">
-             <FaChartArea className="mr-3" /> Laporan (Soon)
+             <FaChartLine className="mr-3" /> Laporan (Soon)
         </div>
       </nav>
 
@@ -71,7 +82,7 @@ const Sidebar = () => {
             onClick={handleLogout}
             className="w-full flex items-center justify-center bg-red-600 hover:bg-red-700 text-white py-2 rounded transition-colors shadow-lg"
         >
-            <FaBox className="mr-2" /> Logout
+            <FaSignOutAlt className="mr-2" /> Logout
         </button>
       </div>
     </div>

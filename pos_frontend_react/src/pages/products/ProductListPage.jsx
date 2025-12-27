@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getProducts, deleteProduct } from '../../services/productService';
 import { Link } from 'react-router-dom';
 import Sidebar from "../../components/Sidebar";
+import Header from "../../components/Header";
 import Swal from 'sweetalert2';
 
 const ProductListPage = () => {
@@ -12,6 +13,7 @@ const ProductListPage = () => {
         const loadData = async () => {
             try {
                 const result = await getProducts();
+                console.log("API Result:", result); // Debugging structure
                 setProducts(result.data || result);
             } catch (err) {
                 alert("Gagal ambil produk: " + err);
@@ -72,13 +74,7 @@ const ProductListPage = () => {
 
             {/* Bagian: Konten Utama */}
             <div className="flex-1 p-8">
-                <header className="bg-white shadow p-4 rounded mb-6 flex justify-between items-center">
-                    <h2 className="text-xl font-semibold text-gray-800">Overview</h2>
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-600">Halo, Admin</span>
-                        <div className="w-8 h-8 bg-blue-500 rounded-full"></div>
-                    </div>
-                </header>
+                <Header title="Overview" />
 
                 <div className="p-6">
                     <h1 className="text-2xl font-bold mb-4">Daftar Produk</h1>
@@ -103,19 +99,23 @@ const ProductListPage = () => {
                                         <td className="p-3 font-bold">{prod.productName}</td>
                                         {/* Asumsi backend mengirim object category atau categoryName */}
                                         <td className="p-3">
-                                            {prod.category ? prod.category.categoryName : prod.categoryId}
+                                            {/* Backend mengirim categoryName langsung di object product */}
+                                            {prod.categoryName || "-"}
                                         </td>
                                         <td className="p-3">{formatRupiah(prod.price)}</td>
                                         <td className="p-3">{prod.stock} pcs</td>
                                         <td className="p-3">
                                             <div className="flex flex-wrap gap-1">
-                                                {/* Cek apakah ada tags, lalu looping */}
-                                                {prod.tags && prod.tags.map((tag) => (
-                                                    <span key={tag.id} className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-0.5 rounded">
-                                                        {tag.tagName}
-                                                    </span>
-                                                ))}
-                                                {(!prod.tags || prod.tags.length === 0) && <span className="text-gray-400 text-xs">-</span>}
+                                                {/* Backend mengirim tags sebagai array of strings: ["Tag A", "Tag B"] */}
+                                                {prod.tags && prod.tags.length > 0 ? (
+                                                    prod.tags.map((tagName, idx) => (
+                                                        <span key={idx} className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-0.5 rounded">
+                                                            {tagName}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className="text-gray-400 text-xs">-</span>
+                                                )}
                                             </div>
                                         </td>
                                         <td className="p-3">

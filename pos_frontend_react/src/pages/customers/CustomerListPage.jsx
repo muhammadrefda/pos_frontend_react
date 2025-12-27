@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getCustomers, deleteCustomer } from '../../services/customerService';
 import { Link } from 'react-router-dom';
 import Sidebar from "../../components/Sidebar";
+import Header from "../../components/Header";
 import Swal from 'sweetalert2';
 
 const CustomerListPage = () => {
@@ -62,13 +63,7 @@ const CustomerListPage = () => {
 
             {/* Main Content */}
             <div className="flex-1 p-8">
-                <header className="bg-white shadow p-4 rounded mb-6 flex justify-between items-center">
-                    <h2 className="text-xl font-semibold text-gray-800">Overview</h2>
-                    <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-600">Halo, Admin</span>
-                        <div className="w-8 h-8 bg-blue-500 rounded-full"></div>
-                    </div>
-                </header>
+                <Header title="Overview" />
 
                 <div className="p-6">
                     <h1 className="text-2xl font-bold mb-4">Daftar Pelanggan</h1>
