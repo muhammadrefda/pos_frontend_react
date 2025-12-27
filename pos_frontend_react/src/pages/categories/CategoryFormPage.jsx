@@ -25,7 +25,7 @@ const CategoryFormPage = () => {
             await createCategory(formData);
             alert("Kategori berhasil disimpan!");
             navigate('/categories'); // Balik ke list
-        } catch (error) {
+        } catch {
             alert("Gagal menyimpan kategori.");
         }
     };

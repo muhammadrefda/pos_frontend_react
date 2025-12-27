@@ -6,19 +6,19 @@ import Swal from 'sweetalert2';
 
 const ProductListPage = () => {
     const [products, setProducts] = useState([]);
+    const [refreshKey, setRefreshKey] = useState(0);
 
     useEffect(() => {
+        const loadData = async () => {
+            try {
+                const result = await getProducts();
+                setProducts(result.data || result);
+            } catch (err) {
+                alert("Gagal ambil produk: " + err);
+            }
+        };
         loadData();
-    }, []);
-
-    const loadData = async () => {
-        try {
-            const result = await getProducts();
-            setProducts(result.data || result);
-        } catch (err) {
-            alert("Gagal ambil produk: " + err);
-        }
-    };
+    }, [refreshKey]);
 
     const handleDelete = (id) => {
         // 1. Tampilkan Konfirmasi Dulu
@@ -46,8 +46,8 @@ const ProductListPage = () => {
                         showConfirmButton: false
                     });
                     
-                    loadData(); // Refresh tabel
-                } catch (error) {
+                    setRefreshKey(old => old + 1); // Refresh tabel
+                } catch {
                     // Handle Error
                     Swal.fire({
                         title: 'Gagal!',

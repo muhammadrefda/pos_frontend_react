@@ -6,25 +6,25 @@ import Sidebar from "../../components/Sidebar";
 
 const CategoryListPage = () => {
     const [categories, setCategories] = useState([]);
+    const [refreshKey, setRefreshKey] = useState(0);
 
     useEffect(() => {
+        const loadData = async () => {
+            try {
+                const result = await getCategories();
+                // Sesuaikan pembungkus data dari backend (result.data atau result)
+                setCategories(result.data || result);
+            } catch (err) {
+                alert("Gagal ambil kategori" + err);
+            }
+        };
         loadData();
-    }, []);
-
-    const loadData = async () => {
-        try {
-            const result = await getCategories();
-            // Sesuaikan pembungkus data dari backend (result.data atau result)
-            setCategories(result.data || result);
-        } catch (err) {
-            alert("Gagal ambil kategori" + err);
-        }
-    };
+    }, [refreshKey]);
 
     const handleDelete = async (id) => {
         if (!window.confirm("Hapus kategori ini?")) return;
         await deleteCategory(id);
-        loadData(); // Refresh tabel
+        setRefreshKey(old => old + 1); // Refresh tabel
     };
 
     return (

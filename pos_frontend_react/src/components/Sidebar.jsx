@@ -57,10 +57,9 @@ const Sidebar = () => {
             <FaBox className="mr-3" /> Kategori
         </Link>
 
-        {/* Menu dummy buat pemanis */}
-        <div className="px-4 py-3 text-gray-500 cursor-not-allowed flex items-center">
-             <FaBox className="mr-3" /> Pelanggan (Soon)
-        </div>
+        <Link to="/customers" className="flex items-center px-4 py-3 hover:bg-gray-700 rounded transition-colors">
+            <FaBox className="mr-3" /> Pelanggan
+        </Link>
         <div className="px-4 py-3 text-gray-500 cursor-not-allowed flex items-center">
              <FaChartArea className="mr-3" /> Laporan (Soon)
         </div>
