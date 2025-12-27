@@ -10,10 +10,9 @@ const CustomerFormPage = () => {
 
     // State Form
     const [formData, setFormData] = useState({
-        name: '',
+        fullName: '',
         phoneNumber: '',
-        email: '',
-        address: ''
+        email: ''
     });
 
     const handleChange = (e) => {
@@ -24,7 +23,21 @@ const CustomerFormPage = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            await createCustomer(formData);
+            /* 
+               Payload harus sesuai dengan CustomerCreateDto di Backend:
+               {
+                   FullName: "...",
+                   PhoneNumber: "...",
+                   Email: "..."
+               }
+            */
+            const payload = {
+                fullName: formData.fullName,
+                phoneNumber: formData.phoneNumber,
+                email: formData.email
+            };
+
+            await createCustomer(payload);
 
             Swal.fire({
                 icon: 'success',
@@ -36,11 +49,13 @@ const CustomerFormPage = () => {
             });
 
         } catch (error) {
-            console.log(error);
+            console.error(error);
+            // Tampilkan pesan error spesifik jika ada
+            const msg = error.response?.data?.message || error.message || 'Gagal menyimpan pelanggan.';
             Swal.fire({
                 icon: 'error',
                 title: 'Oops...',
-                text: 'Gagal menyimpan pelanggan.',
+                text: msg,
             });
         }
     };
@@ -59,23 +74,18 @@ const CustomerFormPage = () => {
 
                         <form onSubmit={handleSubmit}>
                             <div className="mb-4">
-                                <label className="block text-gray-700 mb-2">Nama Pelanggan</label>
-                                <input type="text" name="name" onChange={handleChange} className="w-full border p-2 rounded" required />
+                                <label className="block text-gray-700 mb-2">Nama Lengkap</label>
+                                <input type="text" name="fullName" onChange={handleChange} className="w-full border p-2 rounded" placeholder="Sesuai KTP..." required />
                             </div>
 
                             <div className="mb-4">
                                 <label className="block text-gray-700 mb-2">No. Telepon</label>
-                                <input type="text" name="phoneNumber" onChange={handleChange} className="w-full border p-2 rounded" required />
-                            </div>
-
-                            <div className="mb-4">
-                                <label className="block text-gray-700 mb-2">Email</label>
-                                <input type="email" name="email" onChange={handleChange} className="w-full border p-2 rounded" />
+                                <input type="text" name="phoneNumber" onChange={handleChange} className="w-full border p-2 rounded" placeholder="08..." required />
                             </div>
 
                             <div className="mb-6">
-                                <label className="block text-gray-700 mb-2">Alamat</label>
-                                <textarea name="address" onChange={handleChange} className="w-full border p-2 rounded" rows="3"></textarea>
+                                <label className="block text-gray-700 mb-2">Email</label>
+                                <input type="email" name="email" onChange={handleChange} className="w-full border p-2 rounded" placeholder="nama@email.com" required />
                             </div>
 
                             <div className="flex gap-2">

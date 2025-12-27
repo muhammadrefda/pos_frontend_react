@@ -73,20 +73,18 @@ const CustomerListPage = () => {
                         <table className="w-full text-left">
                             <thead className="bg-gray-100 border-b">
                                 <tr>
-                                    <th className="p-3">Nama</th>
+                                    <th className="p-3">Nama Lengkap</th>
                                     <th className="p-3">No. Telepon</th>
                                     <th className="p-3">Email</th>
-                                    <th className="p-3">Alamat</th>
                                     <th className="p-3">Aksi</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 {customers.map((cust) => (
                                     <tr key={cust.id} className="border-b hover:bg-gray-50">
-                                        <td className="p-3 font-bold">{cust.name}</td>
+                                        <td className="p-3 font-bold">{cust.fullName}</td>
                                         <td className="p-3">{cust.phoneNumber}</td>
                                         <td className="p-3">{cust.email || '-'}</td>
-                                        <td className="p-3">{cust.address || '-'}</td>
                                         <td className="p-3">
                                             <button onClick={() => handleDelete(cust.id)} className="text-red-500 hover:text-red-700">Hapus</button>
                                         </td>
@@ -94,7 +92,7 @@ const CustomerListPage = () => {
                                 ))}
                                 {customers.length === 0 && (
                                     <tr>
-                                        <td colSpan="5" className="p-3 text-center text-gray-500">Belum ada data pelanggan.</td>
+                                        <td colSpan="4" className="p-3 text-center text-gray-500">Belum ada data pelanggan.</td>
                                     </tr>
                                 )}
                             </tbody>

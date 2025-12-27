@@ -8,7 +8,9 @@ import {
     FaList, 
     FaTags, 
     FaUsers, 
-    FaSignOutAlt 
+    FaSignOutAlt,
+    FaShoppingCart,
+    FaHistory 
 } from "react-icons/fa";
 
 
@@ -54,6 +56,14 @@ const Sidebar = () => {
       <nav className="flex-1 px-2 py-4 space-y-2">
         <Link to="/dashboard" className="flex items-center px-4 py-3 hover:bg-gray-700 rounded transition-colors">
             <FaTachometerAlt className="mr-3" /> Dashboard
+        </Link>
+
+        <Link to="/transactions" className="flex items-center px-4 py-3 hover:bg-gray-700 rounded transition-colors bg-blue-900 text-white">
+            <FaShoppingCart className="mr-3" /> Transaksi (Kasir)
+        </Link>
+
+        <Link to="/transactions/history" className="flex items-center px-4 py-3 hover:bg-gray-700 rounded transition-colors">
+            <FaHistory className="mr-3" /> Riwayat Transaksi
         </Link>
         
         <Link to="/products" className="flex items-center px-4 py-3 hover:bg-gray-700 rounded transition-colors">

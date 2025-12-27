@@ -10,6 +10,8 @@ import CustomerListPage from './pages/customers/CustomerListPage';
 import CustomerFormPage from './pages/customers/CustomerFormPage';
 import TagListPage from './pages/tags/TagListPage';
 import TagFormPage from './pages/tags/TagFormPage';
+import TransactionPage from './pages/transactions/TransactionPage';
+import TransactionListPage from './pages/transactions/TransactionListPage';
 
 function App() {
   return (
@@ -21,6 +23,8 @@ function App() {
 
           <Route path="/" element={<DashboardPage />} /> 
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/transactions" element={<TransactionPage />} />
+          <Route path="/transactions/history" element={<TransactionListPage />} />
           <Route path="/products" element={<ProductListPage />} /> 
           <Route path="/products/new" element={<ProductFormPage/>}/>
           <Route path="/categories" element={<CategoryListPage />} />
