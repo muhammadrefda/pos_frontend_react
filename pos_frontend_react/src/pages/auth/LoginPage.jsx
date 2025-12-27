@@ -1,42 +1,44 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../../services/api'; // Import jembatan API kita
+import api from '../../services/api';
+import { 
+    Container, 
+    Box, 
+    Typography, 
+    TextField, 
+    Button, 
+    Paper, 
+    Alert,
+    CircularProgress
+} from '@mui/material';
 
 const LoginPage = () => {
-  // State untuk menyimpan input user
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
-  const navigate = useNavigate(); // Hook untuk pindah halaman
+  const navigate = useNavigate();
 
   const handleLogin = async (e) => {
-    e.preventDefault(); // Mencegah reload halaman
+    e.preventDefault();
     setError('');
     setLoading(true);
 
     try {
-      // 1. Tembak API Login Backend (.NET)
-      // Pastikan payload { username, password } sesuai dengan DTO Backend
       const response = await api.post('/auth/login', {
         username: username,
         password: password
       });
 
       console.log("Response Backend:", response.data);
-
-      // 2. Ambil Token (Sesuaikan struktur JSON ApiResponse backendmu)
-      // Biasanya: response.data.data.token atau response.data.token
       const token = response.data.data.token; 
 
       if (token) {
-        // 3. Simpan Token dan Username di Brankas Browser (LocalStorage)
         localStorage.setItem('token', token);
         localStorage.setItem('username', username);
-        
-        // 4. Redirect ke Dashboard
-        alert("Login Berhasil! Otw Dashboard...");
+        // Alert bawaan browser bisa diganti Snackbar MUI nanti, tapi ini cukup dulu
+        // alert("Login Berhasil! Otw Dashboard..."); 
         navigate('/dashboard');
       } else {
         setError("Token tidak ditemukan di response.");
@@ -44,7 +46,6 @@ const LoginPage = () => {
 
     } catch (err) {
       console.error("Login Error:", err);
-      // Tampilkan pesan error dari backend jika ada
       const msg = err.response?.data?.message || "Gagal terhubung ke server";
       setError(msg);
     } finally {
@@ -53,52 +54,69 @@ const LoginPage = () => {
   };
 
   return (
-    <div className="flex items-center justify-center min-h-screen bg-gray-100">
-      <div className="bg-white p-8 rounded-lg shadow-lg w-96 border border-gray-200">
-        <h2 className="text-2xl font-bold text-center text-blue-600 mb-6">POS Login</h2>
-        
-        {/* Pesan Error */}
-        {error && (
-          <div className="bg-red-100 text-red-700 p-3 rounded mb-4 text-sm text-center">
-            {error}
-          </div>
-        )}
+    <Box 
+        sx={{
+            minHeight: '100vh',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            bgcolor: 'background.default'
+        }}
+    >
+      <Container maxWidth="xs">
+        <Paper elevation={3} sx={{ p: 4, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+          
+          <Typography component="h1" variant="h4" color="primary" fontWeight="bold" sx={{ mb: 3 }}>
+            POS Login
+          </Typography>
 
-        <form onSubmit={handleLogin}>
-          <div className="mb-4">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Username</label>
-            <input 
-              type="text" 
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+          {error && (
+            <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
+              {error}
+            </Alert>
+          )}
+
+          <Box component="form" onSubmit={handleLogin} sx={{ mt: 1, width: '100%' }}>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="username"
+              label="Username"
+              name="username"
+              autoComplete="username"
+              autoFocus
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Contoh: admin"
+              disabled={loading}
             />
-          </div>
-          
-          <div className="mb-6">
-            <label className="block text-gray-700 text-sm font-bold mb-2">Password</label>
-            <input 
-              type="password" 
-              className="w-full px-3 py-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              name="password"
+              label="Password"
+              type="password"
+              id="password"
+              autoComplete="current-password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="Password..."
+              disabled={loading}
             />
-          </div>
-
-          <button 
-            type="submit"
-            disabled={loading}
-            className={`w-full text-white font-bold py-2 px-4 rounded transition duration-200 ${
-              loading ? 'bg-gray-400 cursor-not-allowed' : 'bg-blue-600 hover:bg-blue-700'
-            }`}
-          >
-            {loading ? 'Sedang Masuk...' : 'LOGIN'}
-          </button>
-        </form>
-      </div>
-    </div>
+            
+            <Button
+              type="submit"
+              fullWidth
+              variant="contained"
+              sx={{ mt: 3, mb: 2, py: 1.5, fontSize: '1rem', fontWeight: 'bold' }}
+              disabled={loading}
+            >
+              {loading ? <CircularProgress size={24} color="inherit" /> : 'LOGIN'}
+            </Button>
+          </Box>
+        </Paper>
+      </Container>
+    </Box>
   );
 };
 
