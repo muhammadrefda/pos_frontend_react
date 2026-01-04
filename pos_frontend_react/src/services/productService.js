@@ -1,7 +1,14 @@
 import api from './api';
 
-export const getProducts = async () => {
-  const response = await api.get('/ProductsApi'); 
+export const getProducts = async (page = 1, limit = 10, search = '') => {
+  // Mengirim parameter pageNumber, pageSize & search ke backend
+  const response = await api.get('/ProductsApi', {
+    params: {
+      pageNumber: page,
+      pageSize: limit,
+      search: search
+    }
+  }); 
   // Debugging biar Ali liat isi datanya
   console.log("Products: " + JSON.stringify(response.data)); 
   return response.data;

@@ -7,8 +7,13 @@ export const createTransaction = async (payload) => {
 };
 
 // Ambil semua riwayat transaksi
-export const getTransactions = async () => {
-    const response = await api.get('/TransactionsApi');
+export const getTransactions = async (page = 1, limit = 10) => {
+    const response = await api.get('/TransactionsApi', {
+        params: { 
+            pageNumber: page, 
+            pageSize: limit 
+        }
+    });
     return response.data;
 };
 

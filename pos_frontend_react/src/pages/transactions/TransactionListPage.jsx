@@ -8,13 +8,20 @@ import { FiEye, FiCalendar, FiUser, FiCreditCard } from "react-icons/fi";
 const TransactionListPage = () => {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalRecords, setTotalRecords] = useState(0);
+    const limit = 10;
 
     useEffect(() => {
         const loadTransactions = async () => {
+            setLoading(true); // Pastikan loading true saat fetch baru
             try {
-                const result = await getTransactions();
+                const result = await getTransactions(currentPage, limit);
                 // Sesuaikan dengan struktur API: result.data atau result
-                setTransactions(result.data || result);
+                setTransactions(result.data || []);
+                setTotalPages(result.totalPages || 1);
+                setTotalRecords(result.totalRecords || 0);
             } catch (error) {
                 console.error("Gagal ambil riwayat transaksi:", error);
                 Swal.fire("Error", "Gagal memuat riwayat transaksi.", "error");
@@ -23,7 +30,13 @@ const TransactionListPage = () => {
             }
         };
         loadTransactions();
-    }, []);
+    }, [currentPage]); // Re-fetch saat page berubah
+
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setCurrentPage(newPage);
+        }
+    };
 
     const formatRupiah = (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
 
@@ -94,6 +107,40 @@ const TransactionListPage = () => {
                                 )}
                             </tbody>
                         </table>
+                    </div>
+
+                    {/* Pagination Controls */}
+                    <div className="flex justify-between items-center mt-4 bg-white p-4 rounded-lg shadow">
+                        <span className="text-sm text-gray-600">
+                            Total Transaksi: <span className="font-bold">{totalRecords}</span> | 
+                            Halaman <span className="font-bold">{currentPage}</span> dari {totalPages}
+                        </span>
+                        
+                        <div className="flex gap-2">
+                            <button 
+                                onClick={() => handlePageChange(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                className={`px-4 py-2 rounded text-sm font-medium ${
+                                    currentPage === 1 
+                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                }`}
+                            >
+                                Previous
+                            </button>
+
+                            <button 
+                                onClick={() => handlePageChange(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                className={`px-4 py-2 rounded text-sm font-medium ${
+                                    currentPage === totalPages 
+                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                }`}
+                            >
+                                Next
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

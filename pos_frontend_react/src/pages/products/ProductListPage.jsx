@@ -7,20 +7,52 @@ import Swal from 'sweetalert2';
 
 const ProductListPage = () => {
     const [products, setProducts] = useState([]);
+    // State Pagination
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalRecords, setTotalRecords] = useState(0);
+    const [search, setSearch] = useState("");
+    const [debouncedSearch, setDebouncedSearch] = useState("");
     const [refreshKey, setRefreshKey] = useState(0);
+
+    const limit = 10; // Bisa diubah atau dibuat dinamis
+
+    useEffect(() => {
+        const timer = setTimeout(() => {
+            setDebouncedSearch(search);
+            setCurrentPage(1);
+        }, 500);
+        return () => clearTimeout(timer);
+    }, [search]);
 
     useEffect(() => {
         const loadData = async () => {
             try {
-                const result = await getProducts();
-                console.log("API Result:", result); // Debugging structure
-                setProducts(result.data || result);
+                // Kirim currentPage ke service
+                const result = await getProducts(currentPage, limit, debouncedSearch);
+                console.log("API Result:", result); 
+
+                // Sesuaikan dengan format JSON dari backend
+                // result.data => Array produk
+                // result.totalPages => Total halaman
+                // result.totalRecords => Total semua data
+                setProducts(result.data || []);
+                setTotalPages(result.totalPages || 1);
+                setTotalRecords(result.totalRecords || 0);
+
             } catch (err) {
-                alert("Gagal ambil produk: " + err);
+                console.error(err);
+                // Swal.fire("Error", "Gagal ambil produk", "error"); 
             }
         };
         loadData();
-    }, [refreshKey]);
+    }, [refreshKey, currentPage, debouncedSearch]); // refresh saat page berubah
+
+    const handlePageChange = (newPage) => {
+        if (newPage >= 1 && newPage <= totalPages) {
+            setCurrentPage(newPage);
+        }
+    };
 
     const handleDelete = (id) => {
         // 1. Tampilkan Konfirmasi Dulu
@@ -78,7 +110,18 @@ const ProductListPage = () => {
 
                 <div className="p-6">
                     <h1 className="text-2xl font-bold mb-4">Daftar Produk</h1>
-                    <Link to="/products/new" className="bg-blue-600 text-white px-4 py-2 rounded mb-4 inline-block">+ Tambah Produk</Link>
+                    
+                    <div className="flex justify-between items-center mb-4">
+                        <Link to="/products/new" className="bg-blue-600 text-white px-4 py-2 rounded inline-block">+ Tambah Produk</Link>
+                        
+                        <input 
+                            type="text" 
+                            placeholder="Cari produk..." 
+                            value={search}
+                            onChange={(e) => setSearch(e.target.value)}
+                            className="border p-2 rounded w-64"
+                        />
+                    </div>
 
                     <div className="bg-white shadow rounded overflow-hidden">
                         <table className="w-full text-left">
@@ -125,6 +168,40 @@ const ProductListPage = () => {
                                 ))}
                             </tbody>
                         </table>
+                    </div>
+
+                    {/* Pagination Controls */}
+                    <div className="flex justify-between items-center mt-4 bg-white p-4 rounded shadow">
+                        <span className="text-sm text-gray-600">
+                            Total Data: <span className="font-bold">{totalRecords}</span> | 
+                            Halaman <span className="font-bold">{currentPage}</span> dari {totalPages}
+                        </span>
+                        
+                        <div className="flex gap-2">
+                            <button 
+                                onClick={() => handlePageChange(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                className={`px-4 py-2 rounded text-sm font-medium ${
+                                    currentPage === 1 
+                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                }`}
+                            >
+                                Previous
+                            </button>
+
+                            <button 
+                                onClick={() => handlePageChange(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                className={`px-4 py-2 rounded text-sm font-medium ${
+                                    currentPage === totalPages 
+                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
+                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
+                                }`}
+                            >
+                                Next
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>

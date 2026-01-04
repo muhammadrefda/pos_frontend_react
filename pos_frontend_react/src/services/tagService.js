@@ -1,7 +1,13 @@
 import api from './api';
 
-export const getTags = async () => {
-  const response = await api.get('/TagsApi');
+export const getTags = async (page = 1, limit = 10, search = '') => {
+  const response = await api.get('/TagsApi', {
+    params: { 
+      pageNumber: page, 
+      pageSize: limit, 
+      search 
+    }
+  });
   return response.data;
 };
 

@@ -1,7 +1,13 @@
 import api from './api';
 
-export const getCustomers = async () => {
-  const response = await api.get('/CustomersApi'); 
+export const getCustomers = async (page = 1, limit = 10, search = '') => {
+  const response = await api.get('/CustomersApi', {
+    params: { 
+      pageNumber: page, 
+      pageSize: limit, 
+      search 
+    }
+  }); 
   return response.data;
 };
 
