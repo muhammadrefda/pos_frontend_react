@@ -3,146 +3,162 @@ import { getTransactions } from '../../services/transactionService';
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import Swal from 'sweetalert2';
-import { FiEye, FiCalendar, FiUser, FiCreditCard } from "react-icons/fi";
+import { 
+    Box, 
+    Container, 
+    Paper, 
+    Table, 
+    TableBody, 
+    TableCell, 
+    TableContainer, 
+    TableHead, 
+    TableRow, 
+    Typography, 
+    TablePagination,
+    Chip,
+    IconButton,
+    Tooltip
+} from '@mui/material';
+import { Visibility, CreditCard, AccountBalance, Money } from '@mui/icons-material';
 
 const TransactionListPage = () => {
     const [transactions, setTransactions] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
+    const [page, setPage] = useState(0);
+    const [rowsPerPage, setRowsPerPage] = useState(10);
     const [totalRecords, setTotalRecords] = useState(0);
-    const limit = 10;
 
     useEffect(() => {
         const loadTransactions = async () => {
-            setLoading(true); // Pastikan loading true saat fetch baru
+            setLoading(true);
             try {
-                const result = await getTransactions(currentPage, limit);
-                // Sesuaikan dengan struktur API: result.data atau result
+                const result = await getTransactions(page + 1, rowsPerPage);
                 setTransactions(result.data || []);
-                setTotalPages(result.totalPages || 1);
                 setTotalRecords(result.totalRecords || 0);
             } catch (error) {
                 console.error("Gagal ambil riwayat transaksi:", error);
-                Swal.fire("Error", "Gagal memuat riwayat transaksi.", "error");
             } finally {
                 setLoading(false);
             }
         };
         loadTransactions();
-    }, [currentPage]); // Re-fetch saat page berubah
+    }, [page, rowsPerPage]);
 
-    const handlePageChange = (newPage) => {
-        if (newPage >= 1 && newPage <= totalPages) {
-            setCurrentPage(newPage);
-        }
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
     };
 
     const formatRupiah = (val) => new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(val);
 
+    const getPaymentIcon = (method) => {
+        if (!method) return <Money />;
+        const m = method.toLowerCase();
+        if (m.includes('transfer')) return <AccountBalance />;
+        if (m.includes('qris') || m.includes('card')) return <CreditCard />;
+        return <Money />;
+    };
+
+    const getPaymentColor = (method) => {
+        if (!method) return "default";
+        const m = method.toLowerCase();
+        if (m.includes('transfer')) return "info";
+        if (m.includes('qris')) return "warning";
+        return "success"; // Cash
+    };
+
     return (
         <div className="flex min-h-screen bg-gray-100">
             <Sidebar />
-            <div className="flex-1 p-8">
-                <Header title="Riwayat Transaksi" />
+            <div className="flex-1 flex flex-col h-screen overflow-hidden">
+                <Header title="Transactions" />
 
-                <div className="p-6">
-                    <h1 className="text-2xl font-bold mb-6 text-gray-800">Riwayat Penjualan</h1>
+                <Box component="main" sx={{ flexGrow: 1, p: 3, overflow: 'auto' }}>
+                    <Container maxWidth="xl">
+                        <Box sx={{ mb: 3 }}>
+                            <Typography variant="h4" component="h1" fontWeight="bold" color="text.primary">
+                                Riwayat Transaksi
+                            </Typography>
+                        </Box>
 
-                    <div className="bg-white shadow rounded-lg overflow-hidden">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-50 border-b">
-                                <tr>
-                                    <th className="p-4 font-semibold text-gray-600">ID Transaksi</th>
-                                    <th className="p-4 font-semibold text-gray-600">Tanggal</th>
-                                    <th className="p-4 font-semibold text-gray-600">Pelanggan</th>
-                                    <th className="p-4 font-semibold text-gray-600">Metode Bayar</th>
-                                    <th className="p-4 font-semibold text-gray-600 text-right">Total Tagihan</th>
-                                    <th className="p-4 font-semibold text-gray-600 text-center">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {loading ? (
-                                    <tr>
-                                        <td colSpan="6" className="p-10 text-center text-gray-500">Memuat data...</td>
-                                    </tr>
-                                ) : transactions.length === 0 ? (
-                                    <tr>
-                                        <td colSpan="6" className="p-10 text-center text-gray-500">Belum ada riwayat transaksi.</td>
-                                    </tr>
-                                ) : (
-                                    transactions.map((trx) => (
-                                        <tr key={trx.id} className="border-b hover:bg-gray-50 transition">
-                                            <td className="p-4 font-mono text-sm text-blue-600">#TRX-{trx.id}</td>
-                                            <td className="p-4 text-gray-700">
-                                                <div className="flex items-center gap-2">
-                                                    <FiCalendar className="text-gray-400" />
-                                                    {new Date(trx.transactionDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                                </div>
-                                            </td>
-                                            <td className="p-4 text-gray-700">
-                                                <div className="flex items-center gap-2">
-                                                    <FiUser className="text-gray-400" />
-                                                    {trx.customerName || trx.fullName || "Umum"}
-                                                </div>
-                                            </td>
-                                            <td className="p-4">
-                                                <span className="inline-flex items-center gap-1 px-2 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-bold uppercase">
-                                                    <FiCreditCard /> {trx.paymentMethod}
-                                                </span>
-                                            </td>
-                                            <td className="p-4 text-right font-bold text-gray-800">
-                                                {formatRupiah(trx.totalAmount)}
-                                            </td>
-                                            <td className="p-4 text-center">
-                                                <button 
-                                                    onClick={() => Swal.fire('Info', 'Fitur Detail Transaksi menyusul!', 'info')}
-                                                    className="text-blue-600 hover:text-blue-800 flex items-center gap-1 mx-auto"
-                                                >
-                                                    <FiEye /> Detail
-                                                </button>
-                                            </td>
-                                        </tr>
-                                    ))
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Pagination Controls */}
-                    <div className="flex justify-between items-center mt-4 bg-white p-4 rounded-lg shadow">
-                        <span className="text-sm text-gray-600">
-                            Total Transaksi: <span className="font-bold">{totalRecords}</span> | 
-                            Halaman <span className="font-bold">{currentPage}</span> dari {totalPages}
-                        </span>
-                        
-                        <div className="flex gap-2">
-                            <button 
-                                onClick={() => handlePageChange(currentPage - 1)}
-                                disabled={currentPage === 1}
-                                className={`px-4 py-2 rounded text-sm font-medium ${
-                                    currentPage === 1 
-                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                }`}
-                            >
-                                Previous
-                            </button>
-
-                            <button 
-                                onClick={() => handlePageChange(currentPage + 1)}
-                                disabled={currentPage === totalPages}
-                                className={`px-4 py-2 rounded text-sm font-medium ${
-                                    currentPage === totalPages 
-                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                }`}
-                            >
-                                Next
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                        <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+                            <TableContainer sx={{ maxHeight: 600 }}>
+                                <Table stickyHeader>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell sx={{ fontWeight: 'bold' }}>ID Transaksi</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold' }}>Tanggal</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold' }}>Pelanggan</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold' }}>Metode Bayar</TableCell>
+                                            <TableCell align="right" sx={{ fontWeight: 'bold' }}>Total Tagihan</TableCell>
+                                            <TableCell align="center" sx={{ fontWeight: 'bold' }}>Aksi</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {loading ? (
+                                            <TableRow>
+                                                <TableCell colSpan={6} align="center">Memuat data...</TableCell>
+                                            </TableRow>
+                                        ) : transactions.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={6} align="center">Belum ada riwayat transaksi.</TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            transactions.map((trx) => (
+                                                <TableRow key={trx.transactionId} hover>
+                                                    <TableCell sx={{ fontFamily: 'monospace', color: 'primary.main', fontWeight: 'bold' }}>
+                                                        {trx.invoiceNumber || `#TRX-${trx.transactionId}`}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {new Date(trx.transactionDate).toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                    </TableCell>
+                                                    <TableCell sx={{ fontWeight: 'medium' }}>
+                                                        {trx.customerName || trx.fullName || `Cust ID: ${trx.customerId}`}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Chip 
+                                                            icon={getPaymentIcon(trx.paymentMethod)} 
+                                                            label={trx.paymentMethod} 
+                                                            color={getPaymentColor(trx.paymentMethod)} 
+                                                            size="small" 
+                                                            variant="outlined"
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell align="right" sx={{ fontWeight: 'bold' }}>
+                                                        {formatRupiah(trx.totalAmount)}
+                                                    </TableCell>
+                                                    <TableCell align="center">
+                                                        <Tooltip title="Lihat Detail">
+                                                            <IconButton 
+                                                                color="primary" 
+                                                                onClick={() => Swal.fire('Info', 'Fitur Detail Transaksi menyusul!', 'info')}
+                                                            >
+                                                                <Visibility />
+                                                            </IconButton>
+                                                        </Tooltip>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                            <TablePagination
+                                rowsPerPageOptions={[10, 25, 50]}
+                                component="div"
+                                count={totalRecords}
+                                rowsPerPage={rowsPerPage}
+                                page={page}
+                                onPageChange={handleChangePage}
+                                onRowsPerPageChange={handleChangeRowsPerPage}
+                            />
+                        </Paper>
+                    </Container>
+                </Box>
             </div>
         </div>
     );

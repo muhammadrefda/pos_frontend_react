@@ -3,24 +3,50 @@ import { getProducts, deleteProduct } from '../../services/productService';
 import { Link } from 'react-router-dom';
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
+import { 
+    Box, 
+    Button, 
+    Container, 
+    Paper, 
+    Table, 
+    TableBody, 
+    TableCell, 
+    TableContainer, 
+    TableHead, 
+    TableRow, 
+    Typography, 
+    TextField, 
+    InputAdornment,
+    TablePagination,
+    Chip,
+    IconButton,
+    Stack
+} from '@mui/material';
+import { Search, Add, Delete, Edit, FileDownload, PictureAsPdf, CloudUpload } from '@mui/icons-material';
 import Swal from 'sweetalert2';
+import { exportToExcel, exportToPDF } from '../../services/exportService';
+import ProductImportDialog from '../../components/ProductImportDialog';
 
 const ProductListPage = () => {
     const [products, setProducts] = useState([]);
-    // State Pagination
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
+    const [page, setPage] = useState(0); 
+    const [rowsPerPage, setRowsPerPage] = useState(10);
     const [totalRecords, setTotalRecords] = useState(0);
+    
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [refreshKey, setRefreshKey] = useState(0);
+    const [openImport, setOpenImport] = useState(false); // State Dialog Import
 
-    const limit = 10; // Bisa diubah atau dibuat dinamis
+    // Format Rupiah
+    const formatRupiah = (number) => {
+        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0 }).format(number);
+    };
 
     useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedSearch(search);
-            setCurrentPage(1);
+            setPage(0);
         }, 500);
         return () => clearTimeout(timer);
     }, [search]);
@@ -28,182 +54,237 @@ const ProductListPage = () => {
     useEffect(() => {
         const loadData = async () => {
             try {
-                // Kirim currentPage ke service
-                const result = await getProducts(currentPage, limit, debouncedSearch);
-                console.log("API Result:", result); 
-
-                // Sesuaikan dengan format JSON dari backend
-                // result.data => Array produk
-                // result.totalPages => Total halaman
-                // result.totalRecords => Total semua data
+                // API kita: pageNumber mulai dari 1
+                const result = await getProducts(page + 1, rowsPerPage, debouncedSearch);
                 setProducts(result.data || []);
-                setTotalPages(result.totalPages || 1);
                 setTotalRecords(result.totalRecords || 0);
-
             } catch (err) {
                 console.error(err);
-                // Swal.fire("Error", "Gagal ambil produk", "error"); 
             }
         };
         loadData();
-    }, [refreshKey, currentPage, debouncedSearch]); // refresh saat page berubah
-
-    const handlePageChange = (newPage) => {
-        if (newPage >= 1 && newPage <= totalPages) {
-            setCurrentPage(newPage);
-        }
-    };
+    }, [refreshKey, page, rowsPerPage, debouncedSearch]);
 
     const handleDelete = (id) => {
-        // 1. Tampilkan Konfirmasi Dulu
         Swal.fire({
-            title: 'Yakin hapus produk ini?',
-            text: "Data yang dihapus tidak bisa dikembalikan!",
+            title: 'Hapus Produk?',
+            text: "Data tidak bisa dikembalikan!",
             icon: 'warning',
             showCancelButton: true,
-            confirmButtonColor: '#d33', // Warna merah untuk tombol hapus
-            cancelButtonColor: '#3085d6', // Warna biru untuk batal
-            confirmButtonText: 'Ya, Hapus!',
-            cancelButtonText: 'Batal'
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Ya, Hapus!'
         }).then(async (result) => {
-            // 2. Jika user klik "Ya"
             if (result.isConfirmed) {
                 try {
                     await deleteProduct(id);
-                    
-                    // 3. Tampilkan Sukses & Refresh Data
-                    Swal.fire({
-                        title: 'Terhapus!',
-                        text: 'Produk berhasil dihapus.',
-                        icon: 'success',
-                        timer: 1500, // Otomatis tutup setelah 1.5 detik
-                        showConfirmButton: false
-                    });
-                    
-                    setRefreshKey(old => old + 1); // Refresh tabel
+                    Swal.fire('Terhapus!', 'Produk berhasil dihapus.', 'success');
+                    setRefreshKey(old => old + 1); 
                 } catch {
-                    // Handle Error
-                    Swal.fire({
-                        title: 'Gagal!',
-                        text: 'Gagal menghapus produk (Mungkin sedang digunakan di transaksi).',
-                        icon: 'error'
-                    });
+                    Swal.fire('Gagal!', 'Gagal menghapus produk.', 'error');
                 }
             }
         });
     };
 
-    // Helper function untuk format Rupiah (Bonus UX)
-    const formatRupiah = (number) => {
-        return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR' }).format(number);
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
+
+    // --- LOGIC EXPORT ---
+    const fetchAllDataForExport = async () => {
+        try {
+            // Ambil semua data (limit besar, misal 1000) agar terdownload semua
+            // Idealnya backend punya endpoint khusus export tanpa pagination
+            const result = await getProducts(1, 1000, debouncedSearch);
+            return result.data || [];
+        } catch (error) {
+            console.error("Gagal download data", error);
+            Swal.fire("Error", "Gagal mengambil data untuk export", "error");
+            return [];
+        }
+    };
+
+    const handleExportExcel = async () => {
+        const data = await fetchAllDataForExport();
+        if (data.length === 0) return;
+
+        // Format data agar rapi di Excel
+        const excelData = data.map(item => ({
+            "Nama Produk": item.productName,
+            "Kategori": item.categoryName,
+            "Harga": item.price,
+            "Stok": item.stock,
+            "Status": item.active ? "Aktif" : "Non-Aktif",
+            "Tags": item.tags ? item.tags.join(", ") : ""
+        }));
+
+        exportToExcel(excelData, "Data-Produk", "Produk");
+    };
+
+    const handleExportPDF = async () => {
+        const data = await fetchAllDataForExport();
+        if (data.length === 0) return;
+
+        // Definisi Kolom PDF
+        const columns = [
+            { title: "Nama Produk", dataKey: "productName" },
+            { title: "Kategori", dataKey: "categoryName" },
+            { title: "Harga", dataKey: "price" },
+            { title: "Stok", dataKey: "stock" },
+            { title: "Tags", dataKey: "tags" }
+        ];
+
+        // Format data baris
+        const pdfData = data.map(item => ({
+            ...item,
+            price: formatRupiah(item.price), // Format rupiah di PDF
+            tags: item.tags ? item.tags.join(", ") : "-"
+        }));
+
+        exportToPDF(columns, pdfData, "Laporan-Produk", "Laporan Data Produk");
     };
 
     return (
         <div className="flex min-h-screen bg-gray-100">
-            {/* Bagian Kiri: SIdebar */}
             <Sidebar />
 
+            <div className="flex-1 flex flex-col h-screen overflow-hidden">
+                <Header title="Products" />
 
-            {/* Bagian: Konten Utama */}
-            <div className="flex-1 p-8">
-                <Header title="Overview" />
+                <Box component="main" sx={{ flexGrow: 1, p: 3, overflow: 'auto' }}>
+                    <Container maxWidth="xl">
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                            <Typography variant="h4" component="h1" fontWeight="bold" color="text.primary">
+                                Daftar Produk
+                            </Typography>
+                            
+                            <Stack direction="row" spacing={2}>
+                                <Button 
+                                    variant="outlined" 
+                                    color="success" 
+                                    startIcon={<FileDownload />}
+                                    onClick={handleExportExcel}
+                                >
+                                    Excel
+                                </Button>
+                                <Button 
+                                    variant="outlined" 
+                                    color="error" 
+                                    startIcon={<PictureAsPdf />}
+                                    onClick={handleExportPDF}
+                                >
+                                    PDF
+                                </Button>
+                                <Button 
+                                    variant="outlined" 
+                                    startIcon={<CloudUpload />}
+                                    onClick={() => setOpenImport(true)}
+                                >
+                                    Import CSV
+                                </Button>
+                                <Button 
+                                    component={Link} 
+                                    to="/products/new" 
+                                    variant="contained" 
+                                    startIcon={<Add />}
+                                >
+                                    Tambah Produk
+                                </Button>
+                            </Stack>
+                        </Box>
 
-                <div className="p-6">
-                    <h1 className="text-2xl font-bold mb-4">Daftar Produk</h1>
-                    
-                    <div className="flex justify-between items-center mb-4">
-                        <Link to="/products/new" className="bg-blue-600 text-white px-4 py-2 rounded inline-block">+ Tambah Produk</Link>
-                        
-                        <input 
-                            type="text" 
-                            placeholder="Cari produk..." 
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="border p-2 rounded w-64"
-                        />
-                    </div>
+                        <Paper sx={{ p: 2, mb: 3 }}>
+                            <TextField
+                                fullWidth
+                                variant="outlined"
+                                placeholder="Cari produk..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <Search color="action" />
+                                        </InputAdornment>
+                                    ),
+                                }}
+                                size="small"
+                            />
+                        </Paper>
 
-                    <div className="bg-white shadow rounded overflow-hidden">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-100 border-b">
-                                <tr>
-                                    <th className="p-3">Nama Produk</th>
-                                    {/* Kalau backend kirim CategoryName, tampilkan. Kalau cuma ID, tampilkan ID dulu gapapa */}
-                                    <th className="p-3">Kategori</th>
-                                    <th className="p-3">Harga</th>
-                                    <th className="p-3">Stok</th>
-                                    <th className="p-3">Tag</th>
-                                    <th className="p-3">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {products.map((prod) => (
-                                    <tr key={prod.id} className="border-b hover:bg-gray-50">
-                                        <td className="p-3 font-bold">{prod.productName}</td>
-                                        {/* Asumsi backend mengirim object category atau categoryName */}
-                                        <td className="p-3">
-                                            {/* Backend mengirim categoryName langsung di object product */}
-                                            {prod.categoryName || "-"}
-                                        </td>
-                                        <td className="p-3">{formatRupiah(prod.price)}</td>
-                                        <td className="p-3">{prod.stock} pcs</td>
-                                        <td className="p-3">
-                                            <div className="flex flex-wrap gap-1">
-                                                {/* Backend mengirim tags sebagai array of strings: ["Tag A", "Tag B"] */}
-                                                {prod.tags && prod.tags.length > 0 ? (
-                                                    prod.tags.map((tagName, idx) => (
-                                                        <span key={idx} className="bg-yellow-100 text-yellow-800 text-xs font-semibold px-2 py-0.5 rounded">
-                                                            {tagName}
+                        <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+                            <TableContainer sx={{ maxHeight: 600 }}>
+                                <Table stickyHeader>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell sx={{ fontWeight: 'bold' }}>Nama Produk</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold', width: '200px' }}>Kategori</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold' }}>Harga</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold' }}>Stok</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold', width: '300px' }}>Tags</TableCell>
+                                            <TableCell align="center" sx={{ fontWeight: 'bold' }}>Aksi</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {products.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={6} align="center">Data tidak ditemukan.</TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            products.map((row) => (
+                                                <TableRow key={row.id} hover>
+                                                    <TableCell>
+                                                        <Typography variant="body1" fontWeight="medium">{row.productName}</Typography>
+                                                    </TableCell>
+                                                    <TableCell>{row.categoryName || '-'}</TableCell>
+                                                    <TableCell>{formatRupiah(row.price)}</TableCell>
+                                                    <TableCell>
+                                                        <span className={row.stock < 5 ? 'text-red-600 font-bold' : 'text-gray-800'}>
+                                                            {row.stock}
                                                         </span>
-                                                    ))
-                                                ) : (
-                                                    <span className="text-gray-400 text-xs">-</span>
-                                                )}
-                                            </div>
-                                        </td>
-                                        <td className="p-3">
-                                            <button onClick={() => handleDelete(prod.id)} className="text-red-500 hover:text-red-700">Hapus</button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+                                                            {row.tags && row.tags.map((tag, idx) => (
+                                                                <Chip key={idx} label={tag} size="small" color="primary" variant="outlined" />
+                                                            ))}
+                                                        </Stack>
+                                                    </TableCell>
+                                                    <TableCell align="center">
+                                                        <IconButton color="error" onClick={() => handleDelete(row.id)}>
+                                                            <Delete />
+                                                        </IconButton>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                            <TablePagination
+                                rowsPerPageOptions={[10, 25, 50]}
+                                component="div"
+                                count={totalRecords}
+                                rowsPerPage={rowsPerPage}
+                                page={page}
+                                onPageChange={handleChangePage}
+                                onRowsPerPageChange={handleChangeRowsPerPage}
+                            />
+                        </Paper>
+                    </Container>
+                </Box>
 
-                    {/* Pagination Controls */}
-                    <div className="flex justify-between items-center mt-4 bg-white p-4 rounded shadow">
-                        <span className="text-sm text-gray-600">
-                            Total Data: <span className="font-bold">{totalRecords}</span> | 
-                            Halaman <span className="font-bold">{currentPage}</span> dari {totalPages}
-                        </span>
-                        
-                        <div className="flex gap-2">
-                            <button 
-                                onClick={() => handlePageChange(currentPage - 1)}
-                                disabled={currentPage === 1}
-                                className={`px-4 py-2 rounded text-sm font-medium ${
-                                    currentPage === 1 
-                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                }`}
-                            >
-                                Previous
-                            </button>
-
-                            <button 
-                                onClick={() => handlePageChange(currentPage + 1)}
-                                disabled={currentPage === totalPages}
-                                className={`px-4 py-2 rounded text-sm font-medium ${
-                                    currentPage === totalPages 
-                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                }`}
-                            >
-                                Next
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                {/* Dialog Import */}
+                <ProductImportDialog 
+                    open={openImport} 
+                    onClose={() => setOpenImport(false)} 
+                    onSuccess={() => setRefreshKey(old => old + 1)}
+                />
             </div>
         </div>
     );

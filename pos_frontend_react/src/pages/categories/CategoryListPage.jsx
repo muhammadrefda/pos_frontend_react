@@ -3,146 +3,182 @@ import { getCategories, deleteCategory } from '../../services/categoryService';
 import { Link } from 'react-router-dom';
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
-
+import { 
+    Box, 
+    Button, 
+    Container, 
+    Paper, 
+    Table, 
+    TableBody, 
+    TableCell, 
+    TableContainer, 
+    TableHead, 
+    TableRow, 
+    Typography, 
+    TextField, 
+    InputAdornment,
+    TablePagination,
+    Chip,
+    IconButton
+} from '@mui/material';
+import { Search, Add, Delete, Edit } from '@mui/icons-material';
 
 const CategoryListPage = () => {
     const [categories, setCategories] = useState([]);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
+    // Pagination State (MUI TablePagination uses 0-based index for page)
+    const [page, setPage] = useState(0); 
+    const [rowsPerPage, setRowsPerPage] = useState(10);
     const [totalRecords, setTotalRecords] = useState(0);
+    
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [refreshKey, setRefreshKey] = useState(0);
-    const limit = 10;
 
-    // Debounce Logic: Update debouncedSearch after 500ms of inactivity
+    // Debounce Search
     useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedSearch(search);
-            setCurrentPage(1); // Reset to page 1 on new search
+            setPage(0); // Reset ke halaman pertama saat search berubah
         }, 500);
-
         return () => clearTimeout(timer);
     }, [search]);
 
+    // Load Data
     useEffect(() => {
         const loadData = async () => {
             try {
-                const result = await getCategories(currentPage, limit, debouncedSearch);
+                // Backend saya page-nya mulai dari 1, tapi MUI mulai dari 0. Jadi perlu +1
+                const result = await getCategories(page + 1, rowsPerPage, debouncedSearch);
                 setCategories(result.data || []);
-                setTotalPages(result.totalPages || 1);
                 setTotalRecords(result.totalRecords || 0);
             } catch (err) {
                 alert("Gagal ambil kategori" + err);
             }
         };
         loadData();
-    }, [refreshKey, currentPage, debouncedSearch]);
-
-    const handlePageChange = (newPage) => {
-        if (newPage >= 1 && newPage <= totalPages) {
-            setCurrentPage(newPage);
-        }
-    };
+    }, [refreshKey, page, rowsPerPage, debouncedSearch]);
 
     const handleDelete = async (id) => {
         if (!window.confirm("Hapus kategori ini?")) return;
         await deleteCategory(id);
-        setRefreshKey(old => old + 1); // Refresh tabel
+        setRefreshKey(old => old + 1);
+    };
+
+    // Handler Pagination MUI
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
     };
 
     return (
-
-        <div className='flex min-h-screen bg-gray-100'>
-            {/* Bagian Kiri: SIdebar */}
-
+        <div className="flex min-h-screen bg-gray-100">
+            {/* Sidebar masih pakai komponen lama (Hybrid sementara) */}
             <Sidebar />
-            {/* Bagian: Konten Utama */}
-            <div className="flex-1 p-8">
+
+            <div className="flex-1 flex flex-col h-screen overflow-hidden">
                 <Header title="Overview" />
 
-
-                <div className="p-6">
-                    <h1 className="text-2xl font-bold mb-4">Master Kategori</h1>
-                    
-                    <div className="flex justify-between items-center mb-4">
-                        <Link to="/categories/new" className="bg-blue-600 text-white px-4 py-2 rounded inline-block">+ Tambah Baru</Link>
-                        
-                        <input 
-                            type="text" 
-                            placeholder="Cari kategori..." 
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="border p-2 rounded w-64"
-                        />
-                    </div>
-
-                    <div className="bg-white shadow rounded overflow-hidden">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-100 border-b">
-                                <tr>
-                                    <th className="p-3">Nama</th>
-                                    <th className="p-3">Deskripsi</th>
-                                    <th className="p-3">Status</th>
-                                    <th className="p-3">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {categories.map((cat) => (
-                                    <tr key={cat.id} className="border-b hover:bg-gray-50">
-                                        <td className="p-3">{cat.categoryName}</td>
-                                        <td className="p-3">{cat.description}</td>
-                                        <td className="p-3">
-                                            <span className={`px-2 py-1 rounded text-xs ${cat.active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                                {cat.active ? 'Aktif' : 'Non-Aktif'}
-                                            </span>
-                                        </td>
-                                        <td className="p-3">
-                                            <button onClick={() => handleDelete(cat.id)} className="text-red-500 hover:text-red-700">Hapus</button>
-                                        </td>
-                                    </tr>
-                                ))}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Pagination Controls */}
-                    <div className="flex justify-between items-center mt-4 bg-white p-4 rounded shadow">
-                        <span className="text-sm text-gray-600">
-                            Total Data: <span className="font-bold">{totalRecords}</span> | 
-                            Halaman <span className="font-bold">{currentPage}</span> dari {totalPages}
-                        </span>
-                        
-                        <div className="flex gap-2">
-                            <button 
-                                onClick={() => handlePageChange(currentPage - 1)}
-                                disabled={currentPage === 1}
-                                className={`px-4 py-2 rounded text-sm font-medium ${
-                                    currentPage === 1 
-                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                }`}
+                <Box component="main" sx={{ flexGrow: 1, p: 3, overflow: 'auto' }}>
+                    <Container maxWidth="lg">
+                        {/* Header Halaman */}
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                            <Typography variant="h4" component="h1" fontWeight="bold" color="text.primary">
+                                Master Kategori
+                            </Typography>
+                            <Button 
+                                component={Link} 
+                                to="/categories/new" 
+                                variant="contained" 
+                                startIcon={<Add />}
                             >
-                                Previous
-                            </button>
+                                Tambah Baru
+                            </Button>
+                        </Box>
 
-                            <button 
-                                onClick={() => handlePageChange(currentPage + 1)}
-                                disabled={currentPage === totalPages}
-                                className={`px-4 py-2 rounded text-sm font-medium ${
-                                    currentPage === totalPages 
-                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                }`}
-                            >
-                                Next
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                        {/* Search Bar */}
+                        <Paper sx={{ p: 2, mb: 3 }}>
+                            <TextField
+                                fullWidth
+                                variant="outlined"
+                                placeholder="Cari nama kategori..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <Search color="action" />
+                                        </InputAdornment>
+                                    ),
+                                }}
+                                size="small"
+                            />
+                        </Paper>
+
+                        {/* Tabel Data */}
+                        <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+                            <TableContainer sx={{ maxHeight: 440 }}>
+                                <Table stickyHeader aria-label="sticky table">
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell sx={{ fontWeight: 'bold' }}>Nama Kategori</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold' }}>Deskripsi</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold' }}>Status</TableCell>
+                                            <TableCell align="center" sx={{ fontWeight: 'bold' }}>Aksi</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {categories.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={4} align="center">
+                                                    Tidak ada data ditemukan.
+                                                </TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            categories.map((row) => (
+                                                <TableRow key={row.id} hover>
+                                                    <TableCell>{row.categoryName}</TableCell>
+                                                    <TableCell>{row.description || '-'}</TableCell>
+                                                    <TableCell>
+                                                        <Chip 
+                                                            label={row.active ? "Aktif" : "Non-Aktif"} 
+                                                            color={row.active ? "success" : "default"}
+                                                            size="small"
+                                                            variant="outlined"
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell align="center">
+                                                        <IconButton color="error" onClick={() => handleDelete(row.id)} size="small">
+                                                            <Delete />
+                                                        </IconButton>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                            
+                            {/* Pagination Component Built-in MUI */}
+                            <TablePagination
+                                rowsPerPageOptions={[5, 10, 25]}
+                                component="div"
+                                count={totalRecords}
+                                rowsPerPage={rowsPerPage}
+                                page={page}
+                                onPageChange={handleChangePage}
+                                onRowsPerPageChange={handleChangeRowsPerPage}
+                                labelRowsPerPage="Baris per halaman:"
+                            />
+                        </Paper>
+                    </Container>
+                </Box>
             </div>
         </div>
-
     );
 };
+
 export default CategoryListPage;

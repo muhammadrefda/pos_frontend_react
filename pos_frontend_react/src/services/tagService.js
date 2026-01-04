@@ -14,7 +14,7 @@ export const getTags = async (page = 1, limit = 10, search = '') => {
 export const createTag = async (payload) => {
     // payload: { tagName: "..." }
     const response = await api.post('/TagsApi', payload);
-    return response.data;
+    return response.data.data || response.data;
 };
 
 export const deleteTag = async (id) => {

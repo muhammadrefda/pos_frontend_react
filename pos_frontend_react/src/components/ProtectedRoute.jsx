@@ -15,7 +15,6 @@ const ProtectedRoute = () => {
   // Render children/komponen yang ada di dalam rute ini. 
   // Jika menggunakan element langsung di <Route>, gunakan `Outlet`
 
-  //TODO: cari tau Outlet ini untuk apa, dan kenapa pakai Outlet
   return <Outlet />; 
 };
 

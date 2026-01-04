@@ -4,21 +4,40 @@ import { Link } from 'react-router-dom';
 import Sidebar from "../../components/Sidebar";
 import Header from "../../components/Header";
 import Swal from 'sweetalert2';
+import { 
+    Box, 
+    Button, 
+    Container, 
+    Paper, 
+    Table, 
+    TableBody, 
+    TableCell, 
+    TableContainer, 
+    TableHead, 
+    TableRow, 
+    Typography, 
+    TextField, 
+    InputAdornment,
+    TablePagination,
+    IconButton,
+    Avatar
+} from '@mui/material';
+import { Search, Add, Delete, Person } from '@mui/icons-material';
 
 const CustomerListPage = () => {
     const [customers, setCustomers] = useState([]);
-    const [currentPage, setCurrentPage] = useState(1);
-    const [totalPages, setTotalPages] = useState(1);
+    const [page, setPage] = useState(0); 
+    const [rowsPerPage, setRowsPerPage] = useState(10);
     const [totalRecords, setTotalRecords] = useState(0);
+    
     const [search, setSearch] = useState("");
     const [debouncedSearch, setDebouncedSearch] = useState("");
     const [refreshKey, setRefreshKey] = useState(0);
-    const limit = 10;
 
     useEffect(() => {
         const timer = setTimeout(() => {
             setDebouncedSearch(search);
-            setCurrentPage(1);
+            setPage(0);
         }, 500);
         return () => clearTimeout(timer);
     }, [search]);
@@ -26,148 +45,141 @@ const CustomerListPage = () => {
     useEffect(() => {
         const loadData = async () => {
             try {
-                const result = await getCustomers(currentPage, limit, debouncedSearch);
+                const result = await getCustomers(page + 1, rowsPerPage, debouncedSearch);
                 setCustomers(result.data || []);
-                setTotalPages(result.totalPages || 1);
                 setTotalRecords(result.totalRecords || 0);
             } catch (err) {
-                alert("Gagal ambil pelanggan: " + err);
+                console.error(err);
             }
         };
         loadData();
-    }, [refreshKey, currentPage, debouncedSearch]);
-
-    const handlePageChange = (newPage) => {
-        if (newPage >= 1 && newPage <= totalPages) {
-            setCurrentPage(newPage);
-        }
-    };
+    }, [refreshKey, page, rowsPerPage, debouncedSearch]);
 
     const handleDelete = (id) => {
         Swal.fire({
-            title: 'Yakin hapus pelanggan ini?',
-            text: "Data yang dihapus tidak bisa dikembalikan!",
+            title: 'Hapus Pelanggan?',
+            text: "Data tidak bisa dikembalikan!",
             icon: 'warning',
             showCancelButton: true,
             confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Ya, Hapus!',
-            cancelButtonText: 'Batal'
+            confirmButtonText: 'Ya, Hapus!'
         }).then(async (result) => {
             if (result.isConfirmed) {
                 try {
                     await deleteCustomer(id);
-                    
-                    Swal.fire({
-                        title: 'Terhapus!',
-                        text: 'Pelanggan berhasil dihapus.',
-                        icon: 'success',
-                        timer: 1500,
-                        showConfirmButton: false
-                    });
-                    
+                    Swal.fire('Terhapus!', 'Pelanggan berhasil dihapus.', 'success');
                     setRefreshKey(old => old + 1);
                 } catch {
-                    Swal.fire({
-                        title: 'Gagal!',
-                        text: 'Gagal menghapus pelanggan.',
-                        icon: 'error'
-                    });
+                    Swal.fire('Gagal!', 'Gagal menghapus pelanggan.', 'error');
                 }
             }
         });
     };
 
+    const handleChangePage = (event, newPage) => {
+        setPage(newPage);
+    };
+
+    const handleChangeRowsPerPage = (event) => {
+        setRowsPerPage(parseInt(event.target.value, 10));
+        setPage(0);
+    };
+
     return (
         <div className="flex min-h-screen bg-gray-100">
-            {/* Sidebar */}
             <Sidebar />
 
-            {/* Main Content */}
-            <div className="flex-1 p-8">
-                <Header title="Overview" />
+            <div className="flex-1 flex flex-col h-screen overflow-hidden">
+                <Header title="Customers" />
 
-                <div className="p-6">
-                    <h1 className="text-2xl font-bold mb-4">Daftar Pelanggan</h1>
-                    
-                    <div className="flex justify-between items-center mb-4">
-                        <Link to="/customers/new" className="bg-blue-600 text-white px-4 py-2 rounded inline-block">+ Tambah Pelanggan</Link>
-                        
-                        <input 
-                            type="text" 
-                            placeholder="Cari pelanggan..." 
-                            value={search}
-                            onChange={(e) => setSearch(e.target.value)}
-                            className="border p-2 rounded w-64"
-                        />
-                    </div>
-
-                    <div className="bg-white shadow rounded overflow-hidden">
-                        <table className="w-full text-left">
-                            <thead className="bg-gray-100 border-b">
-                                <tr>
-                                    <th className="p-3">Nama Lengkap</th>
-                                    <th className="p-3">No. Telepon</th>
-                                    <th className="p-3">Email</th>
-                                    <th className="p-3">Aksi</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                {customers.map((cust) => (
-                                    <tr key={cust.id} className="border-b hover:bg-gray-50">
-                                        <td className="p-3 font-bold">{cust.fullName}</td>
-                                        <td className="p-3">{cust.phoneNumber}</td>
-                                        <td className="p-3">{cust.email || '-'}</td>
-                                        <td className="p-3">
-                                            <button onClick={() => handleDelete(cust.id)} className="text-red-500 hover:text-red-700">Hapus</button>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {customers.length === 0 && (
-                                    <tr>
-                                        <td colSpan="4" className="p-3 text-center text-gray-500">Belum ada data pelanggan.</td>
-                                    </tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    {/* Pagination Controls */}
-                    <div className="flex justify-between items-center mt-4 bg-white p-4 rounded shadow">
-                        <span className="text-sm text-gray-600">
-                            Total Data: <span className="font-bold">{totalRecords}</span> | 
-                            Halaman <span className="font-bold">{currentPage}</span> dari {totalPages}
-                        </span>
-                        
-                        <div className="flex gap-2">
-                            <button 
-                                onClick={() => handlePageChange(currentPage - 1)}
-                                disabled={currentPage === 1}
-                                className={`px-4 py-2 rounded text-sm font-medium ${
-                                    currentPage === 1 
-                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                }`}
+                <Box component="main" sx={{ flexGrow: 1, p: 3, overflow: 'auto' }}>
+                    <Container maxWidth="lg">
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+                            <Typography variant="h4" component="h1" fontWeight="bold" color="text.primary">
+                                Daftar Pelanggan
+                            </Typography>
+                            <Button 
+                                component={Link} 
+                                to="/customers/new" 
+                                variant="contained" 
+                                startIcon={<Add />}
                             >
-                                Previous
-                            </button>
+                                Tambah Pelanggan
+                            </Button>
+                        </Box>
 
-                            <button 
-                                onClick={() => handlePageChange(currentPage + 1)}
-                                disabled={currentPage === totalPages}
-                                className={`px-4 py-2 rounded text-sm font-medium ${
-                                    currentPage === totalPages 
-                                    ? 'bg-gray-100 text-gray-400 cursor-not-allowed' 
-                                    : 'bg-white border border-gray-300 text-gray-700 hover:bg-gray-50'
-                                }`}
-                            >
-                                Next
-                            </button>
-                        </div>
-                    </div>
-                </div>
+                        <Paper sx={{ p: 2, mb: 3 }}>
+                            <TextField
+                                fullWidth
+                                variant="outlined"
+                                placeholder="Cari pelanggan (nama, hp)..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                InputProps={{
+                                    startAdornment: (
+                                        <InputAdornment position="start">
+                                            <Search color="action" />
+                                        </InputAdornment>
+                                    ),
+                                }}
+                                size="small"
+                            />
+                        </Paper>
+
+                        <Paper sx={{ width: '100%', overflow: 'hidden' }}>
+                            <TableContainer sx={{ maxHeight: 600 }}>
+                                <Table stickyHeader>
+                                    <TableHead>
+                                        <TableRow>
+                                            <TableCell sx={{ fontWeight: 'bold', width: 50 }}>Avatar</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold' }}>Nama Lengkap</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold' }}>No. Telepon</TableCell>
+                                            <TableCell sx={{ fontWeight: 'bold' }}>Email</TableCell>
+                                            <TableCell align="center" sx={{ fontWeight: 'bold' }}>Aksi</TableCell>
+                                        </TableRow>
+                                    </TableHead>
+                                    <TableBody>
+                                        {customers.length === 0 ? (
+                                            <TableRow>
+                                                <TableCell colSpan={5} align="center">Data tidak ditemukan.</TableCell>
+                                            </TableRow>
+                                        ) : (
+                                            customers.map((row) => (
+                                                <TableRow key={row.id} hover>
+                                                    <TableCell>
+                                                        <Avatar sx={{ bgcolor: 'primary.main', width: 32, height: 32 }}>
+                                                            <Person fontSize="small" />
+                                                        </Avatar>
+                                                    </TableCell>
+                                                    <TableCell sx={{ fontWeight: 'bold' }}>{row.fullName}</TableCell>
+                                                    <TableCell>{row.phoneNumber}</TableCell>
+                                                    <TableCell>{row.email || '-'}</TableCell>
+                                                    <TableCell align="center">
+                                                        <IconButton color="error" onClick={() => handleDelete(row.id)}>
+                                                            <Delete />
+                                                        </IconButton>
+                                                    </TableCell>
+                                                </TableRow>
+                                            ))
+                                        )}
+                                    </TableBody>
+                                </Table>
+                            </TableContainer>
+                            <TablePagination
+                                rowsPerPageOptions={[10, 25, 50]}
+                                component="div"
+                                count={totalRecords}
+                                rowsPerPage={rowsPerPage}
+                                page={page}
+                                onPageChange={handleChangePage}
+                                onRowsPerPageChange={handleChangeRowsPerPage}
+                            />
+                        </Paper>
+                    </Container>
+                </Box>
             </div>
         </div>
     );
 };
+
 export default CustomerListPage;
