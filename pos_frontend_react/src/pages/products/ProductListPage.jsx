@@ -170,6 +170,11 @@ const ProductListPage = () => {
                                     color="success" 
                                     startIcon={<FileDownload />}
                                     onClick={handleExportExcel}
+                                    sx={{
+                                        '&:hover': {
+                                            backgroundColor: '#0d5e27'
+                                        }
+                                    }}
                                 >
                                     Excel
                                 </Button>

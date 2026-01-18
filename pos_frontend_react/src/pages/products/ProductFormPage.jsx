@@ -19,7 +19,7 @@ import {
     FormControlLabel,
     Switch,
     InputAdornment,
-    Divider
+    Divider,
 } from '@mui/material';
 import { Save, ArrowBack } from '@mui/icons-material';
 

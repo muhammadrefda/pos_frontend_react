@@ -1,6 +1,6 @@
 import api from './api';
 
-export const getCategories = async (page = 1, limit = 10, search = '') => {
+export const getCategories = async (page = 1, limit = 100, search = '') => {
   const response = await api.get('/CategoriesApi', {
     params: { 
       pageNumber: page, 
@@ -9,7 +9,7 @@ export const getCategories = async (page = 1, limit = 10, search = '') => {
     }
   });
 
-  console.log("response: " + JSON.stringify(response.data));
+  //console.log("response: " + JSON.stringify(response.data));
 
   return response.data;
 };
